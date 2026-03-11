@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🐻 Delta Vault
 
-## Getting Started
+**AI-Driven Delta-Neutral Basis Trade Vault on Solana**
 
-First, run the development server:
+Earn 13–28% APY with zero directional risk. jitoSOL staking + Drift perpetual funding rates, continuously optimized by an AI agent.
+
+Built for the **Ranger Build-A-Bear Hackathon** (Main Track + Drift Side Track).
+
+---
+
+## Strategy
+
+| Component | Details |
+|-----------|---------|
+| Spot leg  | jitoSOL (7–8.5% APY from Solana staking + MEV) |
+| Hedge leg | SOL-PERP short at 1× leverage on Drift Protocol |
+| AI agent  | Rotates short to highest-yielding asset every 15 min |
+| Net delta | ~0 (price-neutral) |
+| Target APY | 13–28% combined |
+
+---
+
+## Stack
+
+- **Framework**: Next.js 14 (App Router) — single repo, no separate backend
+- **Wallet**: @solana/wallet-adapter (Phantom, Backpack, Solflare)
+- **Vault program**: @drift-labs/vaults-sdk (audited, no custom Rust needed)
+- **Perp exchange**: @drift-labs/sdk (Drift Protocol v3)
+- **LST**: jitoSOL via Jito REST API
+- **Swap**: Jupiter (bundled inside Drift SDK)
+- **AI Agent**: Next.js API Route + Vercel Cron (every 15 min)
+- **RPC**: Helius
+- **Hosting**: Vercel
+
+---
+
+## Setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.local.example .env.local
+# Fill in your Helius RPC URL and agent private key
+```
+
+### 3. Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Deploy to Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+vercel deploy --prod
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The AI agent cron is automatically configured via `vercel.json` to run every 15 minutes.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/
+  page.tsx                        # Landing page
+  dashboard/page.tsx              # Main vault dashboard
+  api/agent/rebalance/route.ts    # AI agent (Vercel Cron, every 15 min)
+lib/
+  drift.ts                        # Drift SDK wrapper
+  jito.ts                         # jitoSOL APY fetcher
+  agent.ts                        # Rebalance decision logic + Ed25519 signing
+  utils.ts                        # Formatting helpers
+hooks/
+  useVault.ts                     # Vault state + deposit/withdraw
+  useFundingRates.ts              # Live funding rate polling
+components/
+  WalletProvider.tsx              # Solana wallet context
+  ConnectButton.tsx               # Wallet connect/disconnect button
+  VaultStats.tsx                  # APY, delta, health rate cards
+  YieldChart.tsx                  # Donut chart (recharts)
+  DepositModal.tsx                # Multi-step deposit flow
+  AgentMonitor.tsx                # Live funding rates + rebalance history
+  PositionCard.tsx                # User position summary
+vercel.json                       # Cron: /api/agent/rebalance every 15 min
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Environment Variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SOLANA_NETWORK` | `mainnet-beta` |
+| `NEXT_PUBLIC_RPC_URL` | Helius RPC endpoint |
+| `NEXT_PUBLIC_VAULT_PROGRAM_ID` | Drift Vault program address |
+| `AGENT_PRIVATE_KEY` | Ed25519 key for AI agent signing (**server-side only**) |
+| `DRIFT_ENV` | `mainnet-beta` |
+| `MIN_SPREAD_IMPROVEMENT` | `0.01` (1% minimum to trigger rebalance) |
+| `HEALTH_RATE_FLOOR` | `1.05` (kill switch threshold) |
+| `DELTA_DRIFT_THRESHOLD` | `0.02` (2% max delta deviation) |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Hackathon Eligibility
+
+| Requirement | Status |
+|-------------|--------|
+| 10%+ APY | ✅ Conservative 13%, optimistic 28% |
+| 3-month lock | ✅ `redeem_period = 7776000s` in Drift Vault config |
+| No circular yield | ✅ Real staking + market funding rates |
+| No junior tranche | ✅ jitoSOL collateral, no RLP/jrUSDe exposure |
+| No DEX LP | ✅ jitoSOL is LST, not JLP |
+| Health rate ≥ 1.05 | ✅ On-chain hard stop enforced |
+| Drift Side Track | ✅ Built natively on Drift v3 |
+
+---
+
+Delta Vault · Parallax / EPIK · March 2026

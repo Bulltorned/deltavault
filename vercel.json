@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/agent/rebalance",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
